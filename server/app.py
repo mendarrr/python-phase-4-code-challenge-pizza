@@ -19,11 +19,11 @@ db.init_app(app)
 
 api = Api(app)
 
-
 @app.route("/")
 def index():
     return "<h1>Code challenge</h1>"
 
+# Retrieving restaurants with GET request
 @app.route("/restaurants", methods=['GET'])
 def get_restaurants():
     restaurants = Restaurant.query.all()
@@ -33,6 +33,52 @@ def get_restaurants():
         "address": r.address
         } 
         for r in restaurants])
+
+# Retrieving one restaurant using its id
+@app.route("/restaurants/<int:id>", methods=['GET'])
+def get_restaurant_by_id(id):
+    restaurant = db.session.get(Restaurant, id)
+    if not restaurant:
+        return jsonify({"error": "Restaurant not found"}), 404
+    
+    return jsonify({
+        "id": restaurant.id,
+        "name": restaurant.name,
+        "address": restaurant.address,
+        "restaurant_pizzas": [{
+            "id": rp.id,
+            "pizza": {
+                "id": rp.pizza.id,
+                "name": rp.pizza.name,
+                "ingredients": rp.pizza.ingredients,
+            },
+            "price": rp.price
+        } for rp in restaurant.pizzas]
+    })
+
+# Deleting a restaurant using its id
+@app.route("/restaurants/<int:id>", methods=['DELETE'])
+def delete_restaurant(id):
+    restaurant = db.session.get(Restaurant, id)
+    if not restaurant:
+        return jsonify({"error": "Restaurant not found"}), 404
+    
+    db.session.delete(restaurant)
+    db.session.commit()
+    
+    return '', 204
+
+# Retrieving pizzas with GET request
+@app.route("/pizzas", methods=['GET'])
+def get_pizzas():
+    pizzas = Pizza.query.all()
+    return jsonify([{
+        "id": p.id,
+        "name": p.name,
+        "ingredients": p.ingredients
+    } for p in pizzas]), 200
+
+# Creating a new pizza recipe
 
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
